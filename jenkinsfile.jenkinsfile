@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+    tools {
+        // Install the Maven version configured as "M3" and add it to the path.
+        maven "M3"
+    }
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('Docker_cred')
+    }
+    stages {
+        stage('Clone Code') {
+            steps {
+                git credentialsId: 'Git_Token', url: 'https://github.com/DevOpsByMK/project.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                sh("bash; mvn clean package")
+            }
+        }
+        stage('Docker Image') {
+            steps {
+                sh("bash; docker build -t project .")
+            }
+        }
+        
+        stage('Push Docker Image') {
+            steps {
+                
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh("bash; docker tag project devopsbymk/project:latest")
+                sh("bash; docker push devopsbymk/project:latest")
+            }
+        }
+        
+        stage('Deploy App') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'kubeconfig')]) {
+                    sh 'cat $kubeconfig > config'
+                    sh 'kubectl get nodes --kubeconfig=config'
+                    sh 'kubectl apply -f deploy.yaml --kubeconfig=config'
+                }
+            }
+        }
+    }
+    
+}
