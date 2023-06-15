@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-project
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sample-project
+      version: blue
+  template:
+    metadata:
+      name: sample-project-pod
+      labels:
+        app: sample-project
+        version: blue
+    spec:
+      containers:
+      - name: sample-project-container
+        image: devopsbymk/project:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service 
+metadata:
+  name: sample-project-svc
+  labels:
+    app: sample-project
+spec:
+  selector:
+    app: sample-project
+    version: blue
+  type: NodePort
+  ports:
+  - nodePort: 31113
+    port: 8080
+    targetPort: 8080

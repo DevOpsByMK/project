@@ -1,0 +1,22 @@
+node("AppServer"){
+def mavenhome = tool name: "M3"
+def apphome = "/opt/application/web"
+stage("checkout")
+{
+  git credentialsId: 'Git_Token', url: 'https://github.com/DevOpsByMK/webapplication.git'
+}
+stage("build")
+{
+  $(params.enviroment)
+  sh("bash; $(mavenhome)/bin/mvn clean package")
+}
+stage("Deploy")
+{
+  if($(params.deploy) == true)
+  {
+    sshagent(["ubuntu"]){
+      sh("scp -o StrictHostKeyChecking=no webapp/target/webapp.war ubuntu@54.84.221.246:/opt/tomcat9/webapps/webapp.war")
+    }
+  }
+}
+}
